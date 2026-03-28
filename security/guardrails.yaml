@@ -1,0 +1,108 @@
+# This block identifies the policy document.
+# It takes: static metadata used by loaders, auditors, and version checks.
+# It gives: a stable contract so the runtime knows which policy set is active.
+meta:
+  name: "project-optima-guardrails"
+  version: "1.0.0"
+  environment: "development"
+  enabled: true
+
+# This block defines how the policy engine should behave when checks fail.
+# It takes: runtime policy evaluation results from strategy and execution layers.
+# It gives: a default enforcement mode and a clear failure behavior.
+enforcement:
+  mode: "hard-fail"
+  on_policy_violation: "block"
+  require_all_checks: true
+  audit_log_violations: true
+
+# This block defines trust prerequisites before a trade can be considered valid.
+# It takes: ERC-8004 registry lookups, agent identity state, and attestation results.
+# It gives: minimum trust conditions required for execution eligibility.
+trust_requirements:
+  min_trust_score: 0.60
+  require_erc8004_registration: true
+  require_valid_attestation: true
+  attestation_max_age_seconds: 300
+  deny_if_registry_unreachable: true
+
+# This block defines portfolio-level position controls.
+# It takes: current portfolio exposure and the proposed order intent.
+# It gives: hard caps that prevent over-allocation at the account level.
+position_limits:
+  default_position_size_bps: 100
+  max_position_size_bps: 500
+  max_total_open_exposure_bps: 2000
+  max_single_asset_exposure_bps: 700
+  max_concurrent_positions: 5
+
+# This block defines trade-level sizing and order safety rules.
+# It takes: the candidate trade produced by strategy nodes.
+# It gives: order sizing bounds and price-protection constraints.
+trade_limits:
+  min_notional_usd: 25
+  max_notional_usd: 2500
+  max_order_submit_retries: 3
+  max_slippage_bps: 20
+  require_post_only_for_passive_entries: false
+  deny_market_orders_above_notional_usd: 1000
+
+# This block defines strategy quality thresholds.
+# It takes: model output such as confidence, signal score, and regime classification.
+# It gives: minimum quality bars required before a signal can become an executable intent.
+signal_requirements:
+  min_signal_score: 0.55
+  min_model_confidence: 0.65
+  allowed_regimes:
+    - "trend"
+    - "mean_reversion"
+    - "breakout"
+
+# This block defines market state filters.
+# It takes: live market data, spread conditions, and volatility context.
+# It gives: conditions under which trading must be reduced or denied.
+market_conditions:
+  max_spread_bps: 15
+  max_realized_volatility: 0.08
+  deny_if_orderbook_stale_seconds_gt: 2
+  deny_if_market_data_unavailable: true
+
+# This block defines execution pacing controls.
+# It takes: recent execution history and current request pressure.
+# It gives: rate-style limits that reduce burst risk and exchange stress.
+execution_controls:
+  max_orders_per_minute: 20
+  max_failed_orders_before_pause: 5
+  cooldown_after_burst_seconds: 30
+  require_pre_trade_risk_check: true
+
+# This block defines fail-safe behavior for degraded infrastructure.
+# It takes: subsystem health such as Groq, LangGraph persistence, and Kraken CLI status.
+# It gives: the conditions that force the system into a safe blocked state.
+system_safety:
+  deny_if_kraken_cli_unavailable: true
+  deny_if_checkpoint_store_unavailable: true
+  deny_if_inference_backend_degraded: false
+  deny_if_clock_skew_ms_gt: 1000
+
+# This block defines asset-specific overrides.
+# It takes: the symbol being traded.
+# It gives: stricter or looser per-asset controls without changing global defaults.
+asset_overrides:
+  BTCUSD:
+    max_position_size_bps: 400
+    max_notional_usd: 3000
+    max_slippage_bps: 10
+  ETHUSD:
+    max_position_size_bps: 350
+    max_notional_usd: 2000
+    max_slippage_bps: 12
+
+# This block defines explicit deny rules.
+# It takes: runtime context flags collected before order submission.
+# It gives: simple boolean gates for cases that should always stop execution.
+deny_rules:
+  deny_if_manual_kill_switch: true
+  deny_if_daily_loss_limit_breached: true
+  deny_if_wallet_balance_below_usd: 100
+  deny_if_untrusted_operator_context: true
