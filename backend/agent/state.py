@@ -30,6 +30,10 @@ class AgentStateModel(BaseModel):
 # It gives: one normalized inference snapshot for downstream nodes.
 class InferenceState(AgentStateModel):
     raw_output: str | None = None
+    response_format: str | None = None
+    response_summary: str | None = None
+    contract_name: str | None = None
+    contract_version: str | None = None
     parsed_payload: dict[str, Any] | None = None
     normalized_payload: dict[str, Any] | None = None
     signal_output: LLMSignalOutput | None = None

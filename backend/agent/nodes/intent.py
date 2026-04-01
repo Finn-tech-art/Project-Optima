@@ -6,9 +6,12 @@ from typing import Any
 
 from backend.agent.state import RRAAgentState
 from backend.data.models import RecordSource, TradeIntentRecord
-from backend.validation.normalizers import normalize_llm_signal_payload
 from backend.validation.parsers import parse_structured_output
-from backend.validation.schemas import LLMSignalOutput
+from backend.validation.schemas import (
+    LLMSignalOutput,
+    PromptContractSpec,
+    ValidatedInferenceArtifact,
+)
 
 
 # This block defines the callable shape expected for optional intent enrichers.
@@ -44,17 +47,22 @@ def build_intent_node(
         # This block parses the raw output into structured content.
         # It takes: JSON, fenced JSON, or XML-wrapped inference output.
         # It gives: a ParsedStructuredOutput object with decoded payload data.
-        parsed_output = parse_structured_output(raw_output)
+        prompt_contract = PromptContractSpec()
+        parsed_output = parse_structured_output(
+            raw_output,
+            contract=prompt_contract,
+        )
 
-        # This block normalizes minor model-output inconsistencies.
-        # It takes: the parsed payload dictionary.
-        # It gives: a canonical payload shape aligned with strict schemas.
-        normalized_payload = normalize_llm_signal_payload(parsed_output.payload)
-
-        # This block validates the normalized payload against the strict signal schema.
-        # It takes: the normalized payload dictionary.
-        # It gives: a typed LLMSignalOutput object trusted by the rest of the graph.
-        signal_output = LLMSignalOutput.model_validate(normalized_payload)
+        # This block validates the parser result against the prompt contract.
+        # It takes: the parsed response envelope plus contract metadata.
+        # It gives: one typed artifact containing parsed, normalized, and validated output.
+        inference_artifact = ValidatedInferenceArtifact.from_prompt_response(
+            contract=prompt_contract,
+            response=parsed_output,
+            model_name=state.inference.model_name,
+        )
+        normalized_payload = inference_artifact.normalized_payload
+        signal_output = inference_artifact.signal_output
 
         # This block optionally enriches the raw payload attached to the trade record.
         # It takes: the validated signal output and current graph state.
@@ -86,6 +94,8 @@ def build_intent_node(
             raw_payload={
                 "parsed_payload": parsed_output.payload,
                 "normalized_payload": normalized_payload,
+                "response_summary": inference_artifact.parsed_summary,
+                "prompt_contract": inference_artifact.contract.model_dump(mode="json"),
                 "memory": state.metadata.get("memory", {}),
                 **enriched_payload,
             },
@@ -95,6 +105,10 @@ def build_intent_node(
         # It takes: the parsed output, normalized payload, and validated signal object.
         # It gives: a serializable inference-state update for downstream nodes.
         inference_state = state.inference.model_dump()
+        inference_state["response_format"] = inference_artifact.format.value
+        inference_state["response_summary"] = inference_artifact.parsed_summary
+        inference_state["contract_name"] = inference_artifact.contract.contract_name
+        inference_state["contract_version"] = inference_artifact.contract.contract_version
         inference_state["parsed_payload"] = parsed_output.payload
         inference_state["normalized_payload"] = normalized_payload
         inference_state["signal_output"] = signal_output.model_dump()

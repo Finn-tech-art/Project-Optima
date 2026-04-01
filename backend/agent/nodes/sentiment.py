@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import json
 from typing import Any
 
 from backend.agent.state import RRAAgentState
@@ -43,7 +44,9 @@ def build_sentiment_node(
         user_prompt = _build_user_prompt(
             state=state,
             regime_value=regime_value,
-            market_snapshot=market_snapshot.model_dump() if market_snapshot else {},
+            market_snapshot=(
+                market_snapshot.model_dump(mode="json") if market_snapshot else {}
+            ),
         )
 
         # This block wraps the prompts in the XML response contract expected by the parser layer.
@@ -118,12 +121,22 @@ def _build_user_prompt(
     regime_value: str,
     market_snapshot: dict[str, Any],
 ) -> str:
+    portfolio_context = state.metadata.get("portfolio", {})
+    if not isinstance(portfolio_context, dict):
+        portfolio_context = {}
+
+    trust_context = state.metadata.get("trust", {})
+    if not isinstance(trust_context, dict):
+        trust_context = {}
+
     return (
         f"Symbol: {state.symbol}\n"
         f"Trace ID: {state.trace_id}\n"
         f"Thread ID: {state.thread_id}\n"
         f"User Objective: {state.user_objective or 'Generate a trade candidate.'}\n"
         f"Regime: {regime_value}\n"
-        f"Market Snapshot: {market_snapshot}\n"
+        f"Market Snapshot: {json.dumps(market_snapshot, sort_keys=True, default=str)}\n"
+        f"Portfolio Context: {json.dumps(portfolio_context, sort_keys=True, default=str)}\n"
+        f"Trust Context: {json.dumps(trust_context, sort_keys=True, default=str)}\n"
         "Generate a single candidate trade intent with summary and risk notes."
     )

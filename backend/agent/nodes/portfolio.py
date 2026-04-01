@@ -56,6 +56,14 @@ def build_portfolio_node(
             ),
         }
 
+        # This block preserves the richer portfolio snapshot for prompts, UI, and later analysis.
+        # It takes: the raw provider output.
+        # It gives: a serializable portfolio metadata section without constraining future fields.
+        metadata["portfolio"] = {
+            key: value
+            for key, value in portfolio_context.items()
+        }
+
         # This block merges balance and operator-level safety flags.
         # It takes: the raw provider output plus any pre-existing flags.
         # It gives: the exact 'flags' shape expected by security.policy.
@@ -86,6 +94,12 @@ def build_portfolio_node(
                 portfolio_context.get(
                     "untrusted_operator_context",
                     existing_flags.get("untrusted_operator_context", False),
+                )
+            ),
+            "wallet_available_usd": float(
+                portfolio_context.get(
+                    "wallet_available_usd",
+                    existing_flags.get("wallet_available_usd", 0.0),
                 )
             ),
         }

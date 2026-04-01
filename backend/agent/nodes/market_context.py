@@ -42,43 +42,49 @@ def build_market_context_node(
             f"market_context loaded for {snapshot.symbol} with spread_bps={snapshot.spread_bps}"
         )
 
+        runtime_context = _read_runtime_context_overrides(snapshot)
+
         # This block prepares default execution metadata expected by later validation and policy code.
         # It takes: any existing metadata already present on the state.
         # It gives: a metadata dict with the execution, system, flags, and positions keys initialized.
         metadata = dict(state.metadata)
-        metadata.setdefault(
-            "execution",
-            {
+        metadata["execution"] = _merge_metadata_section(
+            existing=metadata.get("execution"),
+            defaults={
                 "orders_in_last_minute": 0,
                 "failed_orders_count": 0,
                 "pre_trade_risk_check_passed": False,
             },
+            overrides=runtime_context.get("execution"),
         )
-        metadata.setdefault(
-            "system",
-            {
+        metadata["system"] = _merge_metadata_section(
+            existing=metadata.get("system"),
+            defaults={
                 "kraken_cli_available": False,
                 "checkpoint_store_available": True,
                 "inference_backend_degraded": False,
                 "clock_skew_ms": 0,
             },
+            overrides=runtime_context.get("system"),
         )
-        metadata.setdefault(
-            "flags",
-            {
+        metadata["flags"] = _merge_metadata_section(
+            existing=metadata.get("flags"),
+            defaults={
                 "manual_kill_switch": False,
                 "daily_loss_limit_breached": False,
                 "wallet_balance_usd": 0.0,
                 "untrusted_operator_context": False,
             },
+            overrides=runtime_context.get("flags"),
         )
-        metadata.setdefault(
-            "positions",
-            {
+        metadata["positions"] = _merge_metadata_section(
+            existing=metadata.get("positions"),
+            defaults={
                 "total_open_exposure_bps": 0.0,
                 "asset_open_exposure_bps": 0.0,
                 "open_positions_count": 0,
             },
+            overrides=runtime_context.get("positions"),
         )
 
         # This block returns the partial state update expected by LangGraph.
@@ -91,3 +97,38 @@ def build_market_context_node(
         }
 
     return market_context_node
+
+
+# This block reads any runtime-context overrides embedded in the market snapshot payload.
+# It takes: a market snapshot record returned by the configured provider.
+# It gives: a dict of optional metadata-section overrides for policy/runtime context.
+def _read_runtime_context_overrides(snapshot: MarketSnapshotRecord) -> dict[str, Any]:
+    raw_payload = snapshot.raw_payload
+    if not isinstance(raw_payload, dict):
+        return {}
+
+    runtime_context = raw_payload.get("runtime_context", {})
+    if isinstance(runtime_context, dict):
+        return runtime_context
+
+    return {}
+
+
+# This block merges default metadata, existing state metadata, and provider overrides.
+# It takes: an existing metadata section, section defaults, and optional override fields.
+# It gives: one normalized dictionary suitable for graph-state updates.
+def _merge_metadata_section(
+    *,
+    existing: Any,
+    defaults: dict[str, Any],
+    overrides: Any,
+) -> dict[str, Any]:
+    merged = dict(defaults)
+
+    if isinstance(existing, dict):
+        merged.update(existing)
+
+    if isinstance(overrides, dict):
+        merged.update(overrides)
+
+    return merged
