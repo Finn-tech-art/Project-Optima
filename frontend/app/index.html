@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project-Optima Control Surface</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="topbar-brand">
+          <p class="eyebrow">Reflexive Reputation Arb</p>
+          <h1>Project-Optima Control Surface</h1>
+        </div>
+        <nav class="topbar-nav">
+          <button id="theme-toggle" type="button" class="secondary-button theme-toggle">Dark Mode</button>
+          <a class="nav-link active" href="/">Control Surface</a>
+          <a class="nav-link" href="/raw">Raw Graph Data</a>
+        </nav>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar">
+          <section class="sidebar-card">
+            <h2>Run Controls</h2>
+            <p>Compact operator inputs with button-driven execution modes.</p>
+
+            <form id="run-form" class="run-form">
+              <input id="execution_backend" name="execution_backend" type="hidden" value="demo" />
+
+              <div class="button-group-block">
+                <span class="field-label">Execution Backend</span>
+                <div class="button-group" data-target="execution_backend">
+                  <button type="button" class="mode-button active" data-value="demo">Demo Dry Run</button>
+                  <button type="button" class="mode-button" data-value="kraken-paper">Kraken Paper</button>
+                </div>
+              </div>
+
+              <label>
+                <span class="field-label">Symbol</span>
+                <input id="symbol" name="symbol" type="text" value="BTCUSD" maxlength="32" />
+              </label>
+
+              <label>
+                <span class="field-label">Operator Objective</span>
+                <textarea id="user_objective" name="user_objective" rows="4">Generate a guarded dry-run trade candidate.</textarea>
+              </label>
+
+              <label>
+                <span class="field-label">Agent Address</span>
+                <input
+                  id="agent_address"
+                  name="agent_address"
+                  type="text"
+                  value="0x1111111111111111111111111111111111111111"
+                />
+              </label>
+
+              <div class="button-group-block">
+                <span class="field-label">Inference Mode</span>
+                <div class="button-group" data-target="use_live_inference">
+                  <button type="button" class="mode-button active" data-value="false">Mock</button>
+                  <button type="button" class="mode-button" data-value="true">Groq Live</button>
+                </div>
+                <input id="use_live_inference" name="use_live_inference" type="hidden" value="false" />
+              </div>
+
+              <button id="run-button" type="submit">Run Workflow</button>
+            </form>
+          </section>
+
+          <section class="sidebar-card">
+            <h2>Runtime Health</h2>
+            <div class="status-stack">
+              <div class="status-card compact">
+                <span class="status-label">Mock Mode</span>
+                <strong id="mock-status">Checking...</strong>
+              </div>
+              <div class="status-card compact">
+                <span class="status-label">Groq Mode</span>
+                <strong id="groq-status">Checking...</strong>
+              </div>
+              <div class="status-card compact">
+                <span class="status-label">Kraken Paper</span>
+                <strong id="kraken-paper-status">Checking...</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="sidebar-card">
+            <h2>Safety</h2>
+            <div class="deadman-card sidebar-deadman">
+              <span class="metric-label">Dead Man's Switch</span>
+              <strong id="deadman-countdown" class="deadman-value">60s</strong>
+              <p>Countdown for `cancel-after 60` operator protection.</p>
+            </div>
+            <div class="hitl-card sidebar-hitl">
+              <span class="metric-label">Human Interrupt</span>
+              <strong id="hitl-status" class="hitl-status">Standby</strong>
+              <p id="hitl-reason">No trade review state available yet.</p>
+              <div class="hitl-actions">
+                <button id="pause-graph" type="button" class="secondary-button">Pause</button>
+                <button id="approve-trade" type="button" class="secondary-button approve">Approve</button>
+                <button id="reject-trade" type="button" class="secondary-button reject">Veto</button>
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <main class="main-stage">
+          <section class="hero-panel">
+            <div>
+              <p class="eyebrow">Agentic Transparency</p>
+              <h2>High-trust market-neutral execution with visible reasoning.</h2>
+              <p class="lede">
+                Show the reflexive edge, signed intent, and governed execution path instead of hiding behind price charts.
+              </p>
+              <div id="account-strip" class="account-strip">
+                <div class="account-metric">
+                  <span class="metric-label">Wallet Balance</span>
+                  <strong id="wallet-balance-display" class="metric-value">$0.00</strong>
+                </div>
+                <div class="account-metric">
+                  <span class="metric-label">Execution Backend</span>
+                  <strong id="backend-display" class="metric-value">demo</strong>
+                </div>
+                <div class="account-metric">
+                  <span class="metric-label">Trust Score</span>
+                  <strong id="trust-score-display" class="metric-value">0.00</strong>
+                </div>
+                <div class="account-metric">
+                  <span class="metric-label">Account State</span>
+                  <strong id="account-state-display" class="metric-value">Waiting</strong>
+                </div>
+              </div>
+            </div>
+            <div class="hero-summary">
+              <p id="summary-caption">No run yet.</p>
+              <div id="summary-grid" class="summary-grid empty">
+                <div class="metric">
+                  <span class="metric-label">Final Status</span>
+                  <strong class="metric-value">Waiting</strong>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Policy</span>
+                  <strong class="metric-value">Idle</strong>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Execution</span>
+                  <strong class="metric-value">Idle</strong>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Messages</span>
+                  <strong class="metric-value">0</strong>
+                </div>
+              </div>
+              <div id="disclaimer" class="callout muted">
+                The dashboard will show a dry-run execution path using demo-safe trust, portfolio, and execution providers.
+              </div>
+            </div>
+          </section>
+
+          <section class="content-grid">
+            <section class="panel divergence-panel">
+              <div class="panel-header">
+                <h2>Reputation Gap</h2>
+                <p>Primary reflexive edge derived from on-chain intent versus visible order-book sentiment.</p>
+              </div>
+              <div class="divergence-shell">
+                <div class="gauge-card">
+                  <div class="gauge-header">
+                    <span class="gauge-label">Divergence Gauge</span>
+                    <strong id="gap-label">Waiting</strong>
+                  </div>
+                  <div class="gauge-track">
+                    <div id="gauge-fill" class="gauge-fill"></div>
+                    <div id="gauge-needle" class="gauge-needle"></div>
+                  </div>
+                  <div class="gauge-scale">
+                    <span>Consensus Risk</span>
+                    <span>Neutral</span>
+                    <span>Alpha Opportunity</span>
+                  </div>
+                </div>
+                <div id="gap-metrics" class="gap-metrics">
+                  <div class="metric">
+                    <span class="metric-label">Intent Score</span>
+                    <strong class="metric-value">0.00</strong>
+                  </div>
+                  <div class="metric">
+                    <span class="metric-label">Order Book Sentiment</span>
+                    <strong class="metric-value">0.00</strong>
+                  </div>
+                  <div class="metric">
+                    <span class="metric-label">Gap</span>
+                    <strong class="metric-value">0.00</strong>
+                  </div>
+                </div>
+                <div id="gap-thesis" class="callout muted">
+                  Run the workflow to compute the reflexive reputation gap.
+                </div>
+              </div>
+            </section>
+
+            <section class="panel cortex-panel">
+              <div class="panel-header">
+                <h2>Live Cortex</h2>
+                <p>See the LangGraph fire node by node instead of hiding behind a spinner.</p>
+              </div>
+              <div id="cortex-graph" class="cortex-graph"></div>
+              <div id="thought-stream" class="thought-stream">
+                <div class="thought-bubble muted">Waiting for a graph run to emit live reasoning cues.</div>
+              </div>
+            </section>
+
+            <section class="panel performance-panel">
+              <div class="panel-header">
+                <h2>Institutional Metrics</h2>
+                <p>Quantify whether the strategy is capturing reputation alpha with lower realized risk.</p>
+              </div>
+              <div id="performance-grid" class="performance-grid">
+                <div class="metric">
+                  <span class="metric-label">Sharpe Ratio</span>
+                  <strong class="metric-value">0.00</strong>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Max Drawdown</span>
+                  <strong class="metric-value">0.00%</strong>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Profit Factor</span>
+                  <strong class="metric-value">0.00</strong>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Edge vs Benchmark</span>
+                  <strong class="metric-value">0.00%</strong>
+                </div>
+              </div>
+              <div class="curve-shell">
+                <div class="curve-header">
+                  <span>Equity Curve vs Buy &amp; Hold</span>
+                  <div class="curve-legend">
+                    <span><i class="legend-swatch strategy"></i>Strategy</span>
+                    <span><i class="legend-swatch benchmark"></i>Benchmark</span>
+                  </div>
+                </div>
+                <svg id="equity-curve" class="equity-curve" viewBox="0 0 640 240" preserveAspectRatio="none"></svg>
+              </div>
+            </section>
+
+            <section class="panel proof-panel">
+              <div class="panel-header">
+                <h2>Proof of Intent</h2>
+                <p>Show the signed-intent and tracked-agent provenance behind each decision.</p>
+              </div>
+              <div id="proof-artifact" class="artifact-card">
+                No validation artifact available yet.
+              </div>
+              <div class="proof-table-wrap">
+                <table class="proof-table">
+                  <thead>
+                    <tr>
+                      <th>Agent ID</th>
+                      <th>Rep</th>
+                      <th>Validation</th>
+                      <th>Stance</th>
+                      <th>Virtual PnL</th>
+                      <th>Attestation</th>
+                      <th>Artifact</th>
+                    </tr>
+                  </thead>
+                  <tbody id="proof-table-body">
+                    <tr>
+                      <td colspan="7" class="table-empty">Run the workflow to inspect the tracked-agent cohort.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel timeline-panel">
+              <div class="panel-header">
+                <h2>Node Timeline</h2>
+                <p>Message trail emitted by the graph run.</p>
+              </div>
+              <ol id="timeline" class="timeline">
+                <li class="timeline-empty">Run the workflow to see the node trail.</li>
+              </ol>
+            </section>
+
+            <section class="panel details-panel">
+              <div class="panel-header">
+                <h2>Decision Lens</h2>
+                <p>Trade, trust, policy, and execution at a glance.</p>
+              </div>
+              <div class="json-grid">
+                <article>
+                  <h3>Trade Intent</h3>
+                  <pre id="trade-intent">No data yet.</pre>
+                </article>
+                <article>
+                  <h3>Policy</h3>
+                  <pre id="policy-state">No data yet.</pre>
+                </article>
+                <article>
+                  <h3>Trust</h3>
+                  <pre id="trust-state">No data yet.</pre>
+                </article>
+                <article>
+                  <h3>Execution</h3>
+                  <pre id="execution-state">No data yet.</pre>
+                </article>
+              </div>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

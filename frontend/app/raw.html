@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project-Optima Raw Graph Data</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell raw-shell">
+      <header class="topbar">
+        <div class="topbar-brand">
+          <p class="eyebrow">Reflexive Reputation Arb</p>
+          <h1>Raw Graph Data</h1>
+        </div>
+        <nav class="topbar-nav">
+          <button id="theme-toggle" type="button" class="secondary-button theme-toggle">Dark Mode</button>
+          <a class="nav-link" href="/">Control Surface</a>
+          <a class="nav-link active" href="/raw">Raw Graph Data</a>
+        </nav>
+      </header>
+
+      <main class="raw-stage">
+        <section class="panel raw-panel solo">
+          <div class="panel-header">
+            <h2>Latest Stored Payload</h2>
+            <p>The most recent workflow response cached by the operator dashboard.</p>
+          </div>
+          <div class="raw-toolbar">
+            <button id="refresh-raw" type="button" class="secondary-button">Refresh Snapshot</button>
+            <a class="secondary-button nav-button" href="/">Back to Control Surface</a>
+          </div>
+          <pre id="raw-page-response">No run payload has been stored yet.</pre>
+        </section>
+      </main>
+    </div>
+
+    <script src="/raw.js" defer></script>
+  </body>
+</html>
